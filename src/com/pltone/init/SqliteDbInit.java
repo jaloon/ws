@@ -1,11 +1,10 @@
 package com.pltone.init;
 
-import java.sql.SQLException;
-
+import com.pltone.util.JdbcUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.pltone.util.JdbcUtil;
+import java.sql.SQLException;
 
 /**
  * sqlite数据库初始化
@@ -25,13 +24,15 @@ public class SqliteDbInit {
 	public static void init() {
 		try {
 			JDBC_UTIL.createSqliteConnection(SQLITE_DB_NAME);
-			String sql = "CREATE TABLE IF NOT EXISTS \"tbl_distribute\" ("
-					+ "  \"id\" integer NOT NULL PRIMARY KEY AUTOINCREMENT,"					// id	自增主键
-					+ "  \"xml\" text NOT NULL,"												// xml	物流配送信息XML文本
-					+ "  \"time\" timestamp NOT NULL DEFAULT (datetime('now','localtime')),"	// time	XML接收时间（默认当前时间）
-					+ "  \"rt\" tinyint(1) NOT NULL DEFAULT 0,"									// rt	转发瑞通系统状态：0 未转发（默认），1 转发成功，2 转发失败
-					+ "  \"plt\" tinyint(1) NOT NULL DEFAULT 0"									// plt	转发普利通系统状态：0 未转发（默认），1 转发成功，2 转发失败
-					+ ");";
+			String sql = new StringBuffer()
+					.append("CREATE TABLE IF NOT EXISTS \"tbl_distribute\" (")
+					.append("  \"id\" integer NOT NULL PRIMARY KEY AUTOINCREMENT,")					// id	自增主键
+					.append("  \"xml\" text NOT NULL,")												// xml	物流配送信息XML文本
+					.append("  \"time\" timestamp NOT NULL DEFAULT (datetime('now','localtime')),")	// time	XML接收时间（默认当前时间）
+					.append("  \"rt\" tinyint(1) NOT NULL DEFAULT 0,")								// rt	转发瑞通系统状态：0 未转发（默认），1 转发成功，2 转发失败
+					.append("  \"plt\" tinyint(1) NOT NULL DEFAULT 0")								// plt	转发普利通系统状态：0 未转发（默认），1 转发成功，2 转发失败
+					.append(");")
+					.toString();
 			JDBC_UTIL.createPrepareStatement(sql);
 			JDBC_UTIL.executeUpdate();
 			JDBC_UTIL.commit();

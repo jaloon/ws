@@ -1,5 +1,9 @@
 package com.pltone.util;
 
+import com.pltone.init.FilePathInit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,11 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.pltone.init.FilePathInit;
 
 /**
  * jdbc数据库操作工具类
@@ -149,7 +148,7 @@ public class JdbcUtil {
 		try {
 			setDriver("org.sqlite.JDBC");
 			Class.forName(driver); // 加载驱动
-			url = new StringBuffer("jdbc:sqlite:").append(FilePathInit.sqlPath).append('/').append(sqliteDbName)
+			url = new StringBuffer("jdbc:sqlite:").append(FilePathInit.DATA_DIR).append('/').append(sqliteDbName)
 					.append(".db").toString();
 			connection = DriverManager.getConnection(url);// sqlite不需要用户名密码
 			connection.setAutoCommit(false);// 设置不自动提交

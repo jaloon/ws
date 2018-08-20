@@ -1,11 +1,5 @@
 package com.pltone.util;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.util.Iterator;
-import java.util.List;
-
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -14,6 +8,13 @@ import org.dom4j.Element;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * 
@@ -102,9 +103,9 @@ public class XmlUtil {
 	 *            要写入的文件路径全名
 	 * @param isFormatOutput
 	 *            是否对输出文档进行排版格式化，<code>true</code>格式化输出，<code>false</code>紧凑型输出
-	 * @throws Exception
+	 * @throws IOException
 	 */
-	public static void writerDocumentToNewFile(Document document, String filePath, boolean isFormatOutput) throws Exception {
+	public static void writerDocumentToNewFile(Document document, String filePath, boolean isFormatOutput) throws IOException {
 		// 输出格式
 		OutputFormat format = null;
 		if (isFormatOutput) {
@@ -117,10 +118,16 @@ public class XmlUtil {
 		// 设置编码
 		format.setEncoding("UTF-8");
 		// XMLWriter 指定输出文件以及格式
-		XMLWriter writer = new XMLWriter(new OutputStreamWriter(new FileOutputStream(new File(filePath)), "UTF-8"), format);
-		// 写入新文件
-		writer.write(document);
-		writer.flush();
-		writer.close();
+        XMLWriter writer = null;
+        try {
+            writer = new XMLWriter(new OutputStreamWriter(new FileOutputStream(new File(filePath)), "UTF-8"), format);
+            // 写入新文件
+            writer.write(document);
+            writer.flush();
+		} finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
 	}
 }

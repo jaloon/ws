@@ -1,5 +1,6 @@
 package com.pltone;
 
+import com.pltone.cnf.ServiceProperties;
 import com.pltone.init.FilePathInit;
 import com.pltone.init.SqliteDbInit;
 import com.pltone.log.LogConfig;
@@ -14,11 +15,15 @@ import com.pltone.ui.MyFrame;
 public class Main {
 
 	public static void main(String[] args) {
-		FilePathInit.init();
-		MyFrame frame = new MyFrame();
-		frame.init();
-		LogConfig.configLog4j(frame);
-		SqliteDbInit.init();
+	    LogConfig.initLog4j();
+        FilePathInit.init();
+        LogConfig.addDailyFileAppender();
+        MyFrame frame = new MyFrame();
+        frame.initUI();
+        LogConfig.addFrameLogAppender(frame);
+        ServiceProperties.init();
+        frame.initConf();
+        SqliteDbInit.init();
 	}
 
 }

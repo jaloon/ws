@@ -9,37 +9,27 @@ import java.io.File;
  * @version 1.0 2018-02-27
  */
 public class FilePathInit {
-	/** 物流转发系统生成文件主存放路径 */
-	public static String mainPath = "C:/distribute";
-	/** 物流转发系统Sqlite数据库文件存放路径 */
-	public static String sqlPath = "C:/distribute/sqldb";
-	/** 物流转发系统日志文件存放路径 */
-	public static String logPath = "C:/distribute/log";
+    /** 应用程序主目录 */
+	public static final String HOME_DIR = System.getProperty("user.dir");
+	/** 文件目录分隔符 */
+	public static final String FILE_SEP = System.getProperty("file.separator");
+	/** 物流转发系统Sqlite数据库文件存放目录 */
+	public static String DATA_DIR = new StringBuffer().append(HOME_DIR).append(FILE_SEP).append("data").toString();
+	/** 物流转发系统日志文件存放目录 */
+	public static String LOG_DIR = new StringBuffer().append(HOME_DIR).append(FILE_SEP).append("log").toString();
 
-	/**
+    /**
 	 * 初始化
 	 */
 	public static void init() {
-		File[] roots = File.listRoots();
-		boolean isDDiskExist = false;
-		if (roots.length > 1) {
-			isDDiskExist = roots[1].getPath().equalsIgnoreCase("D:\\") && roots[1].getTotalSpace() > 0;
-		}
-		if (isDDiskExist) {
-			mainPath = "D:/distribute";
-			sqlPath = "D:/distribute/sqldb";
-			logPath = "D:/distribute/log";
-		}
-		createPath(mainPath);
-		createPath(sqlPath);
-		createPath(logPath);
+		createPath(DATA_DIR);
+		createPath(LOG_DIR);
 	}
 
 	/**
 	 * 创建文件目录
 	 * 
-	 * @param path
-	 *            目录路径
+	 * @param path {@link String} 目录路径
 	 */
 	private static void createPath(String path) {
 		File file = new File(path);
@@ -47,6 +37,24 @@ public class FilePathInit {
 			file.mkdirs();
 		}
 	}
+
+    /**
+     * 获取服务配置文件路径
+     *
+     * @return {@link String} 服务配置文件路径
+     */
+	public static String getPropFilePath() {
+	    return new StringBuffer().append(HOME_DIR).append(FILE_SEP).append("service.properties").toString();
+    }
+
+    /**
+     * 获取日志文件名称
+     *
+     * @return {@link String} 日志文件名称
+     */
+	public static String getLogFileName() {
+	    return new StringBuffer().append(LOG_DIR).append(FILE_SEP).append("distribute").toString();
+    }
 
 	private FilePathInit() {
 	}

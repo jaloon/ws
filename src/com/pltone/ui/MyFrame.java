@@ -1,18 +1,12 @@
 package com.pltone.ui;
 
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.SystemTray;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.concurrent.ScheduledExecutorService;
+import com.pltone.cnf.ServiceProperties;
+import com.pltone.job.ForwordSchedule;
+import com.pltone.util.NetUtil;
+import com.pltone.ws.Elock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -30,16 +24,23 @@ import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.xml.ws.Endpoint;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.pltone.schedule.ForwordSchedule;
-import com.pltone.util.NetUtil;
-import com.pltone.ws.Elock;
+import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.SystemTray;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 自定义窗体
- * 
+ *
  * @author chenlong
  * @version 1.0 2018-02-12
  */
@@ -55,7 +56,8 @@ public class MyFrame extends JFrame {
 	private static final Color START_COLOR = new Color(71, 141, 228);
 	private static final Color STOP_COLOR = new Color(232, 38, 52);
 	private static final String[] HTTP_SELECT = { "http://", "https://" };
-	private static final String[] PATH_SELECT = { "", "Elock_Service.asmx", "service/Elock_Service.asmx" };
+	private static final String[] PATH_SELECT = { "", "Elock_Service.asmx", "elock/Elock_Service.asmx",
+			"service/Elock_Service.asmx" };
 	private Elock elock;
 	private Endpoint endpoint;
 	private ScheduledExecutorService service;
@@ -63,19 +65,13 @@ public class MyFrame extends JFrame {
 	private MyTrayIcon trayIcon;
 	private int frameState = -1;
 	private Image icon;
-	private JPanel contentPane;
-	private JLabel ipLabel;
-	private JLabel portLabel;
-	private JLabel pathLabel;
-	private JLabel rtAddrLabel;
-	private JLabel pltAddrLabel;
 	private JTextField ipText;
-	private JTextField portText;
+	private MyNumberField portText;
 	private JComboBox<String> pathCombo;
 	private JTextField rtIp;
-	private JTextField rtPort;
+	private MyNumberField rtPort;
 	private JTextField pltIp;
-	private JTextField pltPort;
+	private MyNumberField pltPort;
 	private JButton ipBtn;
 	private JButton resetBtn;
 	private JButton startBtn;
@@ -114,98 +110,80 @@ public class MyFrame extends JFrame {
 							JOptionPane.INFORMATION_MESSAGE, null, options, options[1]);
 				}
 				switch (frameState) {
-				case JOptionPane.YES_OPTION:
-					stopService();
-					System.exit(0);
-					break;
-				case JOptionPane.NO_OPTION:
-					setVisible(false);
-					break;
-				default:
-					break;
+					case JOptionPane.YES_OPTION:
+						stopService();
+						System.exit(0);
+						break;
+					case JOptionPane.NO_OPTION:
+						setVisible(false);
+						break;
+					default:
+						break;
 				}
 			}
 		});
 	}
 
 	/**
-	 * 初始化
+	 * 初始化界面
 	 */
-	public void init() {
+	public void initUI() {
 		// 将本机系统外观设置为窗体当前外观
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
-			logger.debug("设置窗体外观异常：{}", e.getMessage());
+			// no exception expected
 		}
-		contentPane = new JPanel();
+
+        JPanel contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 
-		ipLabel = new JLabel("服务器IP地址");
+        JLabel ipLabel = new JLabel("服务器IP地址");
 		ipLabel.setBounds(15, 15, 100, 30);
 		ipLabel.setFont(LABEL_FONT);
 		contentPane.add(ipLabel);
 
-		portLabel = new JLabel("服务器端口号");
+        JLabel portLabel = new JLabel("服务器端口号");
 		portLabel.setBounds(15, 65, 100, 30);
 		portLabel.setFont(LABEL_FONT);
 		contentPane.add(portLabel);
-		
-		pathLabel = new JLabel("服务器路径");
+
+        JLabel pathLabel = new JLabel("服务器路径");
 		pathLabel.setBounds(15, 115, 100, 30);
 		pathLabel.setFont(LABEL_FONT);
 		contentPane.add(pathLabel);
 
 		ipText = new JTextField();
-		ipText.setText("127.0.0.1");
 		ipText.setColumns(10);
 		ipText.setBounds(120, 15, 255, 30);
 		ipText.setFont(TEXTFIELD_FONT);
 		contentPane.add(ipText);
-		ipText.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				ipText.selectAll();
-			}
-		});
 
-		portText = new JTextField();
-		portText.setText("30000");
+		portText = new MyNumberField();
 		portText.setColumns(10);
 		portText.setBounds(120, 65, 255, 30);
 		portText.setFont(TEXTFIELD_FONT);
 		contentPane.add(portText);
-		portText.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				portText.selectAll();
-			}
-		});
 
 		ipBtn = new JButton("获取本机IP");
 		ipBtn.setBounds(395, 15, 100, 30);
 		ipBtn.setFont(NORMAL_BUTTON_FONT);
 		contentPane.add(ipBtn);
-		ipBtn.addActionListener(e -> ipText.setText(NetUtil.getLocalHostLANAddress().getHostAddress()));
 
 		resetBtn = new JButton("重置服务器");
 		resetBtn.setBounds(395, 65, 100, 30);
 		resetBtn.setFont(NORMAL_BUTTON_FONT);
 		contentPane.add(resetBtn);
-		resetBtn.addActionListener(e -> {
-			ipText.setText("127.0.0.1");
-			portText.setText("30000");
-		});
-		
-		pathCombo = new JComboBox<String>(PATH_SELECT);
+
+		pathCombo = new JComboBox<>(PATH_SELECT);
 		pathCombo.setBounds(120, 115, 375, 30);
 		pathCombo.setEditable(true);
 		pathCombo.setSelectedIndex(1);
 		contentPane.add(pathCombo);
 
-		rtAddrLabel = new JLabel("瑞通系统物流配送接口地址（ip:port/path）");
+        JLabel rtAddrLabel = new JLabel("瑞通系统物流配送接口地址（ip:port/path）");
 		rtAddrLabel.setBounds(15, 160, 300, 30);
 		rtAddrLabel.setFont(LABEL_FONT);
 		contentPane.add(rtAddrLabel);
@@ -217,49 +195,37 @@ public class MyFrame extends JFrame {
 		forwordRt.setSelected(true);
 		contentPane.add(forwordRt);
 
-		rtHttp = new JComboBox<String>(HTTP_SELECT);
+		rtHttp = new JComboBox<>(HTTP_SELECT);
 		rtHttp.setBounds(15, 200, 80, 35);
 		contentPane.add(rtHttp);
 
-		rtIp = new JTextField("192.168.7.20");
+		rtIp = new JTextField();
 		rtIp.setColumns(10);
 		rtIp.setBounds(95, 200, 130, 35);
 		contentPane.add(rtIp);
-		rtIp.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				rtIp.selectAll();
-			}
-		});
 
 		JLabel label1 = new JLabel(":");
 		label1.setBounds(225, 200, 10, 35);
 		label1.setFont(TEXTFIELD_FONT);
 		contentPane.add(label1);
 
-		rtPort = new JTextField("28080");
+		rtPort = new MyNumberField();
 		rtPort.setColumns(10);
 		rtPort.setBounds(235, 200, 50, 35);
 		contentPane.add(rtPort);
-		rtPort.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				rtPort.selectAll();
-			}
-		});
 
 		JLabel label2 = new JLabel("/");
 		label2.setBounds(285, 200, 10, 35);
 		label2.setFont(TEXTFIELD_FONT);
 		contentPane.add(label2);
 
-		rtWsPath = new JComboBox<String>(PATH_SELECT);
+		rtWsPath = new JComboBox<>(PATH_SELECT);
 		rtWsPath.setBounds(295, 200, 200, 35);
 		rtWsPath.setEditable(true);
 		rtWsPath.setSelectedIndex(1);
 		contentPane.add(rtWsPath);
 
-		pltAddrLabel = new JLabel("普利通系统物流配送接口地址（ip:port/path）");
+        JLabel pltAddrLabel = new JLabel("普利通系统物流配送接口地址（ip:port/path）");
 		pltAddrLabel.setBounds(15, 250, 300, 30);
 		pltAddrLabel.setFont(LABEL_FONT);
 		contentPane.add(pltAddrLabel);
@@ -270,43 +236,31 @@ public class MyFrame extends JFrame {
 		forwordPlt.setBackground(Color.LIGHT_GRAY);
 		contentPane.add(forwordPlt);
 
-		pltHttp = new JComboBox<String>(HTTP_SELECT);
+		pltHttp = new JComboBox<>(HTTP_SELECT);
 		pltHttp.setBounds(15, 290, 80, 35);
 		contentPane.add(pltHttp);
 
-		pltIp = new JTextField("127.0.0.1");
+		pltIp = new JTextField();
 		pltIp.setColumns(10);
 		pltIp.setBounds(95, 290, 130, 35);
 		contentPane.add(pltIp);
-		pltIp.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				pltIp.selectAll();
-			}
-		});
 
 		JLabel label3 = new JLabel(":");
 		label3.setBounds(225, 290, 10, 35);
 		label3.setFont(TEXTFIELD_FONT);
 		contentPane.add(label3);
 
-		pltPort = new JTextField("8080");
+		pltPort = new MyNumberField("8080");
 		pltPort.setColumns(10);
 		pltPort.setBounds(235, 290, 50, 35);
 		contentPane.add(pltPort);
-		pltPort.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				pltPort.selectAll();
-			}
-		});
 
 		JLabel label4 = new JLabel("/");
 		label4.setBounds(285, 290, 10, 35);
 		label4.setFont(TEXTFIELD_FONT);
 		contentPane.add(label4);
 
-		pltWsPath = new JComboBox<String>(PATH_SELECT);
+		pltWsPath = new JComboBox<>(PATH_SELECT);
 		pltWsPath.setBounds(295, 290, 200, 35);
 		pltWsPath.setEditable(true);
 		pltWsPath.setSelectedIndex(1);
@@ -315,103 +269,16 @@ public class MyFrame extends JFrame {
 		startBtn = new JButton("启动服务");
 		startBtn.setBounds(60, 340, 120, 35);
 		startBtn.setFont(MAX_BUTTON_FONT);
-//		startBtn.setBackground(START_COLOR);
+		// startBtn.setBackground(START_COLOR);
 		startBtn.setForeground(START_COLOR);
 		// startBtn.setOpaque(false);//设置控件是否透明，true为不透明，false为透明
 		contentPane.add(startBtn);
-		startBtn.addActionListener(event -> {
-			logger.info("WebService start...");
-			String address = new StringBuffer("http://").append(ipText.getText()).append(':').append(portText.getText())
-					.append('/').append(pathCombo.getSelectedItem()).toString();
-			String rtWsAddr = new StringBuffer().append(rtHttp.getSelectedItem()).append(rtIp.getText()).append(':')
-					.append(rtPort.getText()).append('/').append(rtWsPath.getSelectedItem()).toString();
-			String pltWsAddr = new StringBuffer().append(pltHttp.getSelectedItem()).append(pltIp.getText()).append(':')
-					.append(pltPort.getText()).append('/').append(pltWsPath.getSelectedItem()).toString();
-
-			elock = new Elock();
-			elock.setForwordRt(forwordRt.isSelected());
-			elock.setForwordPlt(forwordPlt.isSelected());
-			elock.setRtWsAddr(rtWsAddr);
-			elock.setPltWsAddr(pltWsAddr);
-			elock.setTrayIcon(trayIcon);
-			
-			// 启动服务
-			serviceStart = startService(address);
-			if (!serviceStart) {
-				return;
-			}
-
-//			startBtn.setBackground(null);
-			startBtn.setForeground(null);
-			startBtn.setEnabled(false);
-			ipText.setEnabled(false);
-			portText.setEnabled(false);
-			pathCombo.setEnabled(false);
-			ipBtn.setEnabled(false);
-			resetBtn.setEnabled(false);
-			rtHttp.setEnabled(false);
-			rtIp.setEnabled(false);
-			rtPort.setEnabled(false);
-//			rtWsPath.setEditable(false);
-			rtWsPath.setEnabled(false);
-			pltHttp.setEnabled(false);
-			pltIp.setEnabled(false);
-			pltPort.setEnabled(false);
-//			pltWsPath.setEditable(false);
-			pltWsPath.setEnabled(false);
-			forwordRt.setEnabled(false);
-			forwordPlt.setEnabled(false);
-
-//			stopBtn.setBackground(STOP_COLOR);
-			stopBtn.setForeground(STOP_COLOR);
-			stopBtn.setEnabled(true);
-
-			logger.info("转发服务器地址: {}", address);
-			if (forwordRt.isSelected()) {
-				logger.info("瑞通接口地址: {}", rtWsAddr);
-			}
-			if (forwordPlt.isSelected()) {
-				logger.info("普利通接口地址: {}", pltWsAddr);
-			}
-			logger.info("WebService started.");
-		});
 
 		stopBtn = new JButton("停止服务");
 		stopBtn.setBounds(315, 340, 120, 35);
 		stopBtn.setEnabled(false);
 		stopBtn.setFont(MAX_BUTTON_FONT);
 		contentPane.add(stopBtn);
-		stopBtn.addActionListener(e -> {
-			logger.info("WebService stop...");
-//			stopBtn.setBackground(null);
-			stopBtn.setForeground(null);
-			stopBtn.setEnabled(false);
-
-			// 关闭服务
-			stopService();
-
-			ipText.setEnabled(true);
-			portText.setEnabled(true);
-			pathCombo.setEnabled(true);
-			ipBtn.setEnabled(true);
-			resetBtn.setEnabled(true);
-			rtHttp.setEnabled(true);
-			rtIp.setEnabled(true);
-			rtPort.setEnabled(true);
-//			rtWsPath.setEditable(true);
-			rtWsPath.setEnabled(true);
-			pltHttp.setEnabled(true);
-			pltIp.setEnabled(true);
-			pltPort.setEnabled(true);
-//			pltWsPath.setEditable(true);
-			pltWsPath.setEnabled(true);
-			forwordRt.setEnabled(true);
-			forwordPlt.setEnabled(true);
-//			startBtn.setBackground(START_COLOR);
-			startBtn.setForeground(START_COLOR);
-			startBtn.setEnabled(true);
-			logger.info("WebService stoped.");
-		});
 
 		textArea = new JTextArea();
 		// textArea.setBounds(15, 390, 480, 110);
@@ -429,6 +296,191 @@ public class MyFrame extends JFrame {
 
 		addSystemTray();
 		setVisible(true);
+	}
+
+	/**
+	 * 初始化服务器配置
+	 */
+	public void initConf() {
+		ipText.setText(ServiceProperties.getServiceIp());
+		ipText.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				ipText.selectAll();
+			}
+		});
+
+		portText.setNumber(ServiceProperties.getServicePort());
+		portText.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				portText.selectAll();
+			}
+		});
+
+		ipBtn.addActionListener(e -> ipText.setText(NetUtil.getLocalHostLANAddress().getHostAddress()));
+
+		resetBtn.addActionListener(e -> {
+			ipText.setText(ServiceProperties.getServiceIp());
+			portText.setNumber(ServiceProperties.getServicePort());
+            pathCombo.setSelectedItem(ServiceProperties.getServicePath());
+		});
+
+		pathCombo.setSelectedItem(ServiceProperties.getServicePath());
+
+		forwordRt.setSelected(ServiceProperties.isRtForward());
+		rtHttp.setSelectedItem(ServiceProperties.getRtHttp());
+		rtIp.setText(ServiceProperties.getRtIp());
+		rtIp.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				rtIp.selectAll();
+			}
+		});
+		rtPort.setNumber(ServiceProperties.getRtPort());
+		rtPort.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				rtPort.selectAll();
+			}
+		});
+		rtWsPath.setSelectedItem(ServiceProperties.getRtPath());
+
+		forwordPlt.setSelected(ServiceProperties.isPltForward());
+		pltHttp.setSelectedItem(ServiceProperties.getPltHttp());
+		pltIp.setText(ServiceProperties.getPltIp());
+		pltIp.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				pltIp.selectAll();
+			}
+		});
+		pltPort.setNumber(ServiceProperties.getPltPort());
+		pltPort.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				pltPort.selectAll();
+			}
+		});
+		pltWsPath.setSelectedItem(ServiceProperties.getPltPath());
+
+		startBtn.addActionListener(event -> {
+			logger.info("WebService start...");
+			String _serviceIp = ipText.getText();
+			int _servicePort = portText.getNumber(ServiceProperties.DEFAUT_PORT);
+			String _servicePath = pathCombo.getSelectedItem().toString();
+			boolean _rtForward = forwordRt.isSelected();
+			String _rtHttp = rtHttp.getSelectedItem().toString();
+			String _rtIp = rtIp.getText();
+			int _rtPort = rtPort.getNumber(ServiceProperties.DEFAUT_PORT);
+			String _rtPath = rtWsPath.getSelectedItem().toString();
+			boolean _pltForward = forwordPlt.isSelected();
+			String _pltHttp = pltHttp.getSelectedItem().toString();
+			String _pltIp = pltIp.getText();
+			int _pltPort = pltPort.getNumber(ServiceProperties.DEFAUT_PORT);
+			String _pltPath = pltWsPath.getSelectedItem().toString();
+
+			String address = new StringBuffer("http://").append(_serviceIp).append(':').append(_servicePort)
+					.append('/').append(_servicePath).toString();
+			String rtWsAddr = new StringBuffer().append(_rtHttp).append(_rtIp).append(':').append(_rtPort)
+					.append('/').append(_rtPath).toString();
+			String pltWsAddr = new StringBuffer().append(_pltHttp).append(_pltIp).append(':').append(_pltPort)
+					.append('/').append(_pltPath).toString();
+
+			elock = new Elock();
+			elock.setForwordRt(forwordRt.isSelected());
+			elock.setForwordPlt(forwordPlt.isSelected());
+			elock.setRtWsAddr(rtWsAddr);
+			elock.setPltWsAddr(pltWsAddr);
+			elock.setTrayIcon(trayIcon);
+
+			// 启动服务
+			serviceStart = startService(address);
+			if (!serviceStart) {
+				return;
+			}
+
+			ServiceProperties.setServiceIp(_serviceIp);
+			ServiceProperties.setServicePort(_servicePort);
+			ServiceProperties.setServicePath(_servicePath);
+			ServiceProperties.setRtForward(_rtForward);
+			ServiceProperties.setRtHttp(_rtHttp);
+			ServiceProperties.setRtIp(_rtIp);
+			ServiceProperties.setRtPort(_rtPort);
+			ServiceProperties.setRtPath(_rtPath);
+			ServiceProperties.setPltForward(_pltForward);
+			ServiceProperties.setPltHttp(_pltHttp);
+			ServiceProperties.setPltIp(_pltIp);
+			ServiceProperties.setPltPort(_pltPort);
+			ServiceProperties.setPltPath(_pltPath);
+			ServiceProperties.save();
+
+			// startBtn.setBackground(null);
+			startBtn.setForeground(null);
+			startBtn.setEnabled(false);
+			ipText.setEnabled(false);
+			portText.setEnabled(false);
+			pathCombo.setEnabled(false);
+			ipBtn.setEnabled(false);
+			resetBtn.setEnabled(false);
+			rtHttp.setEnabled(false);
+			rtIp.setEnabled(false);
+			rtPort.setEnabled(false);
+			// rtWsPath.setEditable(false);
+			rtWsPath.setEnabled(false);
+			pltHttp.setEnabled(false);
+			pltIp.setEnabled(false);
+			pltPort.setEnabled(false);
+			// pltWsPath.setEditable(false);
+			pltWsPath.setEnabled(false);
+			forwordRt.setEnabled(false);
+			forwordPlt.setEnabled(false);
+
+			// stopBtn.setBackground(STOP_COLOR);
+			stopBtn.setForeground(STOP_COLOR);
+			stopBtn.setEnabled(true);
+
+			logger.info("转发服务器地址: {}", address);
+			if (_rtForward) {
+				logger.info("瑞通接口地址: {}", rtWsAddr);
+			}
+			if (_pltForward) {
+				logger.info("普利通接口地址: {}", pltWsAddr);
+			}
+			logger.info("WebService started.");
+		});
+
+		stopBtn.addActionListener(e -> {
+			logger.info("WebService stop...");
+			// stopBtn.setBackground(null);
+			stopBtn.setForeground(null);
+			stopBtn.setEnabled(false);
+
+			// 关闭服务
+			stopService();
+
+			ipText.setEnabled(true);
+			portText.setEnabled(true);
+			pathCombo.setEnabled(true);
+			ipBtn.setEnabled(true);
+			resetBtn.setEnabled(true);
+			rtHttp.setEnabled(true);
+			rtIp.setEnabled(true);
+			rtPort.setEnabled(true);
+			// rtWsPath.setEditable(true);
+			rtWsPath.setEnabled(true);
+			pltHttp.setEnabled(true);
+			pltIp.setEnabled(true);
+			pltPort.setEnabled(true);
+			// pltWsPath.setEditable(true);
+			pltWsPath.setEnabled(true);
+			forwordRt.setEnabled(true);
+			forwordPlt.setEnabled(true);
+			// startBtn.setBackground(START_COLOR);
+			startBtn.setForeground(START_COLOR);
+			startBtn.setEnabled(true);
+			logger.info("WebService stoped.");
+		});
 	}
 
 	/**
@@ -485,7 +537,7 @@ public class MyFrame extends JFrame {
 
 	/**
 	 * 启动服务
-	 * 
+	 *
 	 * @param address
 	 *            {@link String} WebSevice发布地址
 	 * @return
